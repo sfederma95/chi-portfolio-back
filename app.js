@@ -3,20 +3,23 @@ const app = express();
 const cors = require('cors')
 const Image = require('./models/image');
 const Admin = require('./models/admin');
+const authenticateJWT = require('./helpers/auth');
+const createToken = require('./helpers/token');
 
 app.use(cors())
 app.use(express.json());
 
 app.post('/admin/login',async (req,res,next)=>{
     try {
-        const login = await Admin.login(req.body);
-        return res.status(200).json(login);
+        const admin = await Admin.login(req.body);
+        const token = createToken(admin.email);
+        return res.status(200).json({msg:token});
     } catch(err){
         return next(err);
     }
 })
 
-app.get('/admin/images', async (req, res, next) => {
+app.get('/admin/images', authenticateJWT, async (req, res, next) => {
     try{
         const images = await Image.allImages();
         return res.status(200).json({images})
@@ -25,7 +28,16 @@ app.get('/admin/images', async (req, res, next) => {
     }
 })
 
-app.get('/admin/images/:id', async (req, res, next) => {
+app.get('/images',async(req,res,next)=>{
+    try{
+        const images = await Image.allImages();
+        return res.status(200).json({images})
+    } catch(err){
+        return next(err)
+    }
+})
+
+app.get('/admin/images/:id', authenticateJWT, async (req, res, next) => {
     try{
         const image = await Image.getImage(+req.params.id);
         return res.status(200).json({image})
@@ -34,7 +46,7 @@ app.get('/admin/images/:id', async (req, res, next) => {
     }
 })
 
-app.post('/admin/images', async (req, res, next) => {
+app.post('/admin/images', authenticateJWT, async (req, res, next) => {
     try{
         const msg = await Image.postImage(req.body);
         return res.status(201).json(msg)
@@ -43,7 +55,7 @@ app.post('/admin/images', async (req, res, next) => {
     }
 })
 
-app.put('/admin/images/:id', async (req, res, next) => {
+app.put('/admin/images/:id', authenticateJWT, async (req, res, next) => {
     try{
         const msg = await Image.updateImage(req.body,+req.params.id);
         return res.status(201).json(msg)
@@ -52,7 +64,7 @@ app.put('/admin/images/:id', async (req, res, next) => {
     }
 })
 
-app.delete('/admin/images/:id', async (req, res, next) => {
+app.delete('/admin/images/:id', authenticateJWT, async (req, res, next) => {
     try{
         const msg = await Image.deleteImage(+req.params.id);
         return res.status(200).json(msg)
